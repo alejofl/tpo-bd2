@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres_container
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - db_network
+    volumes:
+      - ./ITBA_2023_esquema_facturacion.sql:/docker-entrypoint-initdb.d/a.sql # Montar el script SQL en el contenedor de inicialización
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo_container
+    ports:
+      - "27017:27017"
+    networks:
+      - db_network
+
+  python-app:
+    build: ./prueba
+    image: app:latest
+    container_name: app
+    restart: always
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./prueba:/prueba
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    depends_on:
+      - postgres
+      - mongo
+    networks:
+      - db_network
+
+networks:
+  db_network:
