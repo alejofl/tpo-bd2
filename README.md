@@ -1,6 +1,8 @@
 # tpo-bd2
 
-On the root folder of the project, run
+First, `cd` into `./turtle_inc` and create a `.env` file, with the same contents as `.env.sample`
+
+Then, on the root folder of the project, run
 ```bash
 docker compose up
 ```
