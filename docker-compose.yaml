@@ -4,6 +4,13 @@ services:
   postgres:
     image: postgres:latest
     container_name: postgres_container
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 30s
+      start_interval: 10s
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
@@ -13,7 +20,7 @@ services:
     networks:
       - db_network
     volumes:
-      - ./ITBA_2023_esquema_facturacion.sql:/docker-entrypoint-initdb.d/a.sql # Montar el script SQL en el contenedor de inicialización
+      - ./squema.sql:/docker-entrypoint-initdb.d/a.sql # Montar el script SQL en el contenedor de inicialización
 
   mongo:
     image: mongo:latest
@@ -34,8 +41,10 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - postgres
-      - mongo
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_started
     networks:
       - db_network
 
