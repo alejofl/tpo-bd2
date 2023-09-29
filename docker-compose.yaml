@@ -24,19 +24,15 @@ services:
       - db_network
 
   python-app:
-    build: ./prueba
+    build: ./turtle_inc
     image: app:latest
     container_name: app
     restart: always
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
-      - ./prueba:/prueba
+      - ./turtle_inc:/src
     ports:
       - "8000:8000"
-    environment:
-      - POSTGRES_NAME=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
     depends_on:
       - postgres
       - mongo
