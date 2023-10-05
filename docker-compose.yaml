@@ -35,7 +35,7 @@ services:
     image: app:latest
     container_name: app
     restart: always
-    command: python manage.py runserver 0.0.0.0:8000
+    command: sh -c "python manage.py migrate --fake-initial && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./turtle_inc:/src
     ports:
