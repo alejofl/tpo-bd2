@@ -1,9 +1,12 @@
 import os
+import dotenv
 from django.db import DataError
+from pymongo import MongoClient
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Cliente, Producto
+from turtle_inc import settings
+from .models import *
 from .persistence import PostgresPersistence, MongoPersistence
 
 
@@ -97,5 +100,66 @@ class ProductInformation(APIView):
 
 class MigrationAssistant(APIView):
     def post(self, request):
-        # TODO
-        pass
+        print(eval(os.environ.get("USE_NOSQL")))
+        if eval(os.environ.get("USE_NOSQL")):
+            return Response({"error": "Already migrated to NoSQL"}, status=status.HTTP_400_BAD_REQUEST)
+
+        mongo_client = MongoClient(os.environ.get("MONGO_HOST"), int(os.environ.get("MONGO_PORT")))
+        mongo_client.drop_database(os.environ.get("MONGO_DATABASE"))
+        db = mongo_client[os.environ.get("MONGO_DATABASE")]
+        clients = db["E01_CLIENTE"]
+        products = db["E01_PRODUCTO"]
+        invoices = db["E01_FACTURA"]
+
+        product_objects = []
+        for product in Producto.objects.all():
+            product_objects.append({
+                "codigo_producto": product.codigo_producto,
+                "marca": product.marca,
+                "nombre": product.nombre,
+                "descripcion": product.descripcion,
+                "precio": product.precio,
+                "stock": product.stock
+            })
+        products.insert_many(product_objects)
+
+        for client in Cliente.objects.all():
+            telephones = []
+            for telephone in client.telefono_set.all():
+                telephones.append({
+                    "codigo_area": telephone.codigo_area,
+                    "nro_telefono": telephone.nro_telefono,
+                    "tipo": telephone.tipo
+                })
+            clients.insert_one({
+                "nro_cliente": client.nro_cliente,
+                "nombre": client.nombre,
+                "apellido": client.apellido,
+                "direccion": client.direccion,
+                "activo": client.activo,
+                "telefonos": telephones
+            })
+
+        for invoice in Factura.objects.all():
+            details = []
+            for detail in invoice.detallefactura_set.all():
+                details.append({
+                    "id_producto": products.find_one({"codigo_producto": detail.codigo_producto.codigo_producto})["_id"],
+                    "nro_item": detail.nro_item,
+                    "cantidad": detail.cantidad
+                })
+            invoices.insert_one({
+                "fecha": invoice.fecha.isoformat(),
+                "total_sin_iva": invoice.total_sin_iva,
+                "total_con_iva": invoice.total_con_iva,
+                "iva": invoice.iva,
+                "id_cliente": clients.find_one({"nro_cliente": invoice.nro_cliente.nro_cliente})["_id"],
+                "detalle_factura": details
+            })
+
+        global persistence
+        persistence = MongoPersistence()
+        os.environ["USE_NOSQL"] = "True"
+        dotenv.set_key(os.path.join(settings.BASE_DIR, ".env"), "USE_NOSQL", os.environ["USE_NOSQL"])
+
+        return Response({}, status=status.HTTP_200_OK)
