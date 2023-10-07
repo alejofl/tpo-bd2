@@ -174,7 +174,7 @@ class MongoPersistence(PersistenceModule):
             update_data["direccion"] = address
         if active is not None:
             update_data["activo"] = active
-        update_result = self.clients.update_one({"_id": ObjectId(id)}, update_data)
+        update_result = self.clients.update_one({"_id": ObjectId(id)}, {"$set": update_data})
         if update_result.matched_count > 0:
             return self.get_client(id)
         else:
@@ -186,16 +186,48 @@ class MongoPersistence(PersistenceModule):
             raise Cliente.DoesNotExist
 
     def get_products(self):
-        pass
+        products = self.products.find()
+        products_array = []
+        for product in products:
+            products_array.append(self.serialize_product(product["_id"], product["marca"], product["nombre"], product["descripcion"], product["precio"], product["stock"]))
+        return products_array
 
     def get_product(self, id):
-        pass
+        product = self.products.find_one({"_id": ObjectId(id)})
+        if product is not None:
+            return self.serialize_product(product["_id"], product["marca"], product["nombre"], product["descripcion"], product["precio"], product["stock"])
+        else:
+            raise Producto.DoesNotExist
 
     def new_product(self, brand, name, description, price, stock):
-        pass
+        product = self.products.insert_one({
+            "marca": brand,
+            "nombre": name,
+            "descripcion": description,
+            "precio": price,
+            "stock": stock
+        })
+        return self.get_product(str(product.inserted_id))
 
     def update_product(self, id, brand, name, description, price, stock):
-        pass
+        update_data = {}
+        if brand is not None:
+            update_data["marca"] = brand 
+        if name is not None:
+            update_data["nombre"] = name
+        if description is not None:
+            update_data["descripcion"] = description
+        if price is not None:
+            update_data["precio"] = price
+        if stock is not None:
+            update_data["stock"] = stock
+        update_result = self.products.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+        if update_result.matched_count > 0:
+            return self.get_product(id)
+        else:
+            raise Producto.DoesNotExist
 
     def delete_product(self, id):
-        pass
+        delete_result = self.products.delete_one({"_id": ObjectId(id)})
+        if delete_result.deleted_count == 0:
+            raise Producto.DoesNotExist
