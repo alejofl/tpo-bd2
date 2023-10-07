@@ -137,7 +137,7 @@ class PostgresPersistence(PersistenceModule):
 class MongoPersistence(PersistenceModule):
     def __init__(self):
         self.client = MongoClient(os.environ.get("MONGO_HOST"), int(os.environ.get("MONGO_PORT")))
-        db = self.client[os.environ.get("MONGO_HOST")]
+        db = self.client[os.environ.get("MONGO_DATABASE")]
         self.clients = db["E01_CLIENTE"]
         self.products = db["E01_PRODUCTO"]
 

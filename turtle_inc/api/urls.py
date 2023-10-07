@@ -7,4 +7,5 @@ urlpatterns = [
     path("clients/<id>", ClientInformation.as_view(), name="client_information"),
     path("products", Products.as_view(), name="products"),
     path("products/<id>", ProductInformation.as_view(), name="product_information"),
+    path("migration", MigrationAssistant.as_view(), name="migration"),
 ]

@@ -93,3 +93,9 @@ class ProductInformation(APIView):
             return Response(persistence.delete_product(id), status=status.HTTP_200_OK)
         except Producto.DoesNotExist:
             return Response({}, status=status.HTTP_404_NOT_FOUND)
+
+
+class MigrationAssistant(APIView):
+    def post(self, request):
+        # TODO
+        pass
