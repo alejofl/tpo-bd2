@@ -1,4 +1,5 @@
 import os
+from django.db import DataError
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -12,7 +13,7 @@ persistence = PostgresPersistence() if not eval(os.environ.get("USE_NOSQL")) els
 class Clients(APIView):
     def get(self, request):
         return Response(persistence.get_clients(), status=status.HTTP_200_OK)
-    
+
     def post(self, request):
         data = request.data
         if data.get("nombre") is None or \
@@ -20,7 +21,10 @@ class Clients(APIView):
            data.get("direccion") is None or \
            data.get("activo") is None:
             return Response({}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(persistence.new_client(data.get("nombre"), data.get("apellido"), data.get("direccion"), data.get("activo")), status=status.HTTP_201_CREATED)
+        try:
+            return Response(persistence.new_client(data.get("nombre"), data.get("apellido"), data.get("direccion"), data.get("activo")), status=status.HTTP_201_CREATED)
+        except DataError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ClientInformation(APIView):
@@ -38,9 +42,54 @@ class ClientInformation(APIView):
             return Response(persistence.update_client(id, data.get("nombre"), data.get("apellido"), data.get("direccion"), data.get("activo")), status=status.HTTP_200_OK)
         except Cliente.DoesNotExist:
             return Response({}, status=status.HTTP_404_NOT_FOUND)
+        except DataError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, id):
         try:
             return Response(persistence.delete_client(id), status=status.HTTP_200_OK)
         except Cliente.DoesNotExist:
+            return Response({}, status=status.HTTP_404_NOT_FOUND)
+
+
+class Products(APIView):
+    def get(self, request):
+        return Response(persistence.get_products(), status=status.HTTP_200_OK)
+
+    def post(self, request):
+        data = request.data
+        if data.get("marca") is None or \
+           data.get("nombre") is None or \
+           data.get("descripcion") is None or \
+           data.get("precio") is None or \
+           data.get("stock") is None:
+            return Response({}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            return Response(persistence.new_product(data.get("marca"), data.get("nombre"), data.get("descripcion"), data.get("precio"), data.get("stock")), status=status.HTTP_201_CREATED)
+        except DataError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProductInformation(APIView):
+    def get(self, request, id):
+        try:
+            return Response(persistence.get_product(id), status=status.HTTP_200_OK)
+        except Producto.DoesNotExist:
+            return Response({}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request, id):
+        try:
+            data = request.data
+            if len(data) == 0:
+                return Response({}, status=status.HTTP_204_NO_CONTENT)
+            return Response(persistence.update_product(id, data.get("marca"), data.get("nombre"), data.get("descripcion"), data.get("precio"), data.get("stock")), status=status.HTTP_200_OK)
+        except Producto.DoesNotExist:
+            return Response({}, status=status.HTTP_404_NOT_FOUND)
+        except DataError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, id):
+        try:
+            return Response(persistence.delete_product(id), status=status.HTTP_200_OK)
+        except Producto.DoesNotExist:
             return Response({}, status=status.HTTP_404_NOT_FOUND)
