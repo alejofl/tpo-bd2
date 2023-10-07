@@ -1,4 +1,7 @@
+import os
 from abc import ABC, abstractmethod
+from bson.objectid import ObjectId
+from pymongo import MongoClient
 from .models import Cliente, Producto
 
 
@@ -132,20 +135,55 @@ class PostgresPersistence(PersistenceModule):
 
 
 class MongoPersistence(PersistenceModule):
+    def __init__(self):
+        self.client = MongoClient(os.environ.get("MONGO_HOST"), int(os.environ.get("MONGO_PORT")))
+        db = self.client[os.environ.get("MONGO_HOST")]
+        self.clients = db["E01_CLIENTE"]
+        self.products = db["E01_PRODUCTO"]
+
     def get_clients(self):
-        pass
+        clients = self.clients.find()
+        clients_array = []
+        for client in clients:
+            clients_array.append(self.serialize_client(client["_id"], client["nombre"], client["apellido"], client["direccion"], client["activo"]))
+        return clients_array
 
     def get_client(self, id):
-        pass
+        client = self.clients.find_one({"_id": ObjectId(id)})
+        if client is not None:
+            return self.serialize_client(client["_id"], client["nombre"], client["apellido"], client["direccion"], client["activo"])
+        else:
+            raise Cliente.DoesNotExist
 
     def new_client(self, first_name, last_name, address, active):
-        pass
+        client = self.clients.insert_one({
+            "nombre": first_name,
+            "apellido": last_name,
+            "direccion": address,
+            "activo": active
+        })
+        return self.get_client(str(client.inserted_id))
 
     def update_client(self, id, first_name, last_name, address, active):
-        pass
+        update_data = {}
+        if first_name is not None:
+            update_data["nombre"] = first_name 
+        if last_name is not None:
+            update_data["apellido"] = last_name
+        if address is not None:
+            update_data["direccion"] = address
+        if active is not None:
+            update_data["activo"] = active
+        update_result = self.clients.update_one({"_id": ObjectId(id)}, update_data)
+        if update_result.matched_count > 0:
+            return self.get_client(id)
+        else:
+            raise Cliente.DoesNotExist
 
     def delete_client(self, id):
-        pass
+        delete_result = self.clients.delete_one({"_id": ObjectId(id)})
+        if delete_result.deleted_count == 0:
+            raise Cliente.DoesNotExist
 
     def get_products(self):
         pass
