@@ -56,7 +56,7 @@ docker compose down --rmi local -v
 
 ## API Endpoints
 
-The REST API, written using Django REST Framework, has the following endponts available to make CRUD operations:
+The REST API, written using Django REST Framework, can be accesed using any HTTP request service as cURL, Postman, Insomnia, among others. Django also creates a visual interface for the API to be used via the browser. The following endponts available to make CRUD operations:
 
 ### `/clients`
 
